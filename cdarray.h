@@ -11,6 +11,54 @@ class CDArray
     int m_Size;
 
 public:
+
+// =====================================================
+// Итераторы
+    typedef int size_type;
+
+        class iterator
+        {
+            public:
+                typedef iterator self_type;
+                typedef T value_type;
+                typedef T& reference;
+                typedef T* pointer;
+                typedef std::forward_iterator_tag iterator_category;
+                typedef int difference_type;
+                iterator(pointer ptr) : ptr_(ptr) { }
+                self_type operator++() { self_type i = *this; ptr_++; return i; }
+                self_type operator++(int junk) { ptr_++; return *this; }
+                self_type operator--() { self_type i = *this; ptr_--; return i; }
+                self_type operator--(int junk) { ptr_--; return *this; }
+                reference operator*() { return *ptr_; }
+                pointer operator->() { return ptr_; }
+                bool operator==(const self_type& rhs) { return ptr_ == rhs.ptr_; }
+                bool operator!=(const self_type& rhs) { return ptr_ != rhs.ptr_; }
+            private:
+                pointer ptr_;
+        };
+
+        class const_iterator
+        {
+            public:
+                typedef const_iterator self_type;
+                typedef T value_type;
+                typedef T& reference;
+                typedef T* pointer;
+                typedef int difference_type;
+                typedef std::forward_iterator_tag iterator_category;
+                const_iterator(pointer ptr) : ptr_(ptr) { }
+                self_type operator++() { self_type i = *this; ptr_++; return i; }
+                self_type operator++(int junk) { ptr_++; return *this; }
+                const reference operator*() { return *ptr_; }
+                const pointer operator->() { return ptr_; }
+                bool operator==(const self_type& rhs) { return ptr_ == rhs.ptr_; }
+                bool operator!=(const self_type& rhs) { return ptr_ != rhs.ptr_; }
+            private:
+                pointer ptr_;
+        };
+// =====================================================
+
     CDArray() : m_Number(0), m_Size (1) {
         m_pData = new T[1];
     };
@@ -31,15 +79,20 @@ public:
     };
 
     virtual ~CDArray() {
-        free(m_pData);
+        delete [] m_pData;
     };
 
     int Add( const T &t ) {
         
-        *( m_pData + m_Number ) = t;
+        m_pData[m_Number] = t;
         m_Number++;
         if( m_Number == m_Size ) {
-            m_pData = (T*)realloc(m_pData, sizeof(T)*m_Size*2);
+
+            T * tmp = new T[m_Size*2];
+            for (size_t i = 0; i < m_Size; ++i) {
+                tmp[i] = m_pData[i];
+            }
+            m_pData = tmp;
             m_Size *= 2;
         }
         
@@ -81,22 +134,31 @@ public:
             return 1;
         }
 
-        *( m_pData + n ) = t;
+        m_pData[n] = t;
         return 0;
     };
 
     int Resize( int size ) {
+
+        if (size == m_Size) {
+            return m_Size;
+        }
         
         // Если попытаться уменьшить размер зарезервированного места, 
         // то уменьшение должно произойти до количества имеющихся элементов
         if (size < m_Number) {
             m_Size = m_Number + 1;
+            return m_Size;
         }
         else {
+            T * tmp = new T[size];
+            for (size_t i = 0; i < m_Size; ++i) {
+                tmp[i] = m_pData[i];
+            }
+            m_pData = tmp;
             m_Size = size;
+            return m_Size;
         }
-
-        return 0;
     };
 
     void Clear() { 
@@ -109,11 +171,12 @@ public:
         // то приходится бросать исключение,
         // потому что сигнатура метода требует возврата объекта,
         // а не кода ошибки, так что вернуть в этом случае нечего.
-        if (i > m_Number - 1) {
+        if (i > m_Number ) {
+            std::cout << "Index too big = " << i << std::endl;
             throw "Index too big";
         }
         else {
-            return *(m_pData + i);
+            return m_pData[i];
         }
 
     };
@@ -130,6 +193,25 @@ public:
         return m_pData;
     };
 
+    iterator begin()
+    {
+        return iterator(m_pData);
+    }
+
+    iterator end()
+    {
+        return iterator(m_pData + m_Number);
+    }
+
+    const_iterator begin() const
+    {
+        return const_iterator(m_pData);
+    }
+
+    const_iterator end() const
+    {
+        return const_iterator(m_pData + m_Number);
+    }
 };
 
 #endif
